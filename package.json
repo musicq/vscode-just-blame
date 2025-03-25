@@ -109,6 +109,15 @@
           "description": "Show relative time (e.g. '2 days ago') instead of absolute date",
           "type": "boolean",
           "default": false
+        },
+        "justBlame.colorMode": {
+          "description": "Whether to apply colors to text or background",
+          "type": "string",
+          "enum": [
+            "text",
+            "background"
+          ],
+          "default": "background"
         }
       }
     }

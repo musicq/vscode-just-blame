@@ -5,4 +5,5 @@ export interface ExtensionProperties {
   };
   locale: string;
   useRelativeTime: boolean;
+  colorMode: 'text' | 'background';
 }

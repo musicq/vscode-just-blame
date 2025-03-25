@@ -13,6 +13,7 @@ export interface BlameEntry {
   date: number;
   timeZone: string;
   summary: string;
+  formattedDate: string;
 }
 
 type BlameResults = Record<string, BlameEntry>;
@@ -59,6 +60,7 @@ function ensureEntry(entries: BlameResults, hash: string) {
       date: 0,
       timeZone: '',
       summary: '',
+      formattedDate: '',
     };
   }
 }

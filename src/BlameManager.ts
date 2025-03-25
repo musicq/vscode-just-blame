@@ -66,6 +66,10 @@ export class BlameManager {
 
     const relativePath = workspace.asRelativePath(editor.document.uri);
     this.blameResults = await getBlameInfo(workspaceRoot, relativePath);
+    this.blameResults = this.blameResults.map((x) => ({
+      ...x,
+      formattedDate: this.formatDate(x.date),
+    }));
 
     if (isEmpty(this.blameResults)) {
       // No results (possibly an error)
@@ -99,9 +103,8 @@ export class BlameManager {
     const sortedDistinctDates = distinctDates.toSorted((a, b) => b - a);
     this.colorMap = sortedDistinctDates.reduce<Record<string, string>>(
       (accumulator, date, index) => {
-        if (index < colorScale.length) {
-          accumulator[date] = colorScale[index];
-        }
+        const i = index % colorScale.length;
+        accumulator[date] = colorScale[i];
         return accumulator;
       },
       {},
@@ -252,18 +255,31 @@ export class BlameManager {
     return `${years} years ago`;
   }
 
+  private formatDate(date: number) {
+    return this.config.useRelativeTime
+      ? this.formatRelativeTime(date)
+      : this.formatDateShort(date);
+  }
+
   private getAnnotationText(
+    hash: string,
     author: string,
-    date: number,
+    formattedDate: string,
     maxAuthorLength: number,
+    maxDateLength: number,
   ) {
+    const authorWidth = this.getStringWidth(author);
+    const paddingWidth = maxAuthorLength - authorWidth;
+    const padding = NBSP.repeat(paddingWidth);
+
     return [
       THIN_SPACE,
-      this.config.useRelativeTime
-        ? this.formatRelativeTime(date)
-        : this.formatDateShort(date),
+      hash,
       ' ',
-      author.padEnd(maxAuthorLength, NBSP),
+      author,
+      padding,
+      ' ',
+      formattedDate.padStart(maxDateLength, NBSP),
       THIN_SPACE,
     ].join('');
   }
@@ -286,20 +302,34 @@ ${summary}
     return this.blameResults.find((x) => x.lines.includes(lineNumber));
   }
 
+  private getStringWidth(str: string): number {
+    let width = 0;
+    for (const char of str) {
+      // assume Chinese characters have a width of 1.5 over english letters,
+      // but this is not accurate, just to make the alignment look better
+      width += /[\u4E00-\u9FA5]/.test(char) ? 1.5 : 1;
+    }
+    return width;
+  }
+
   private getBlamedDecorations(document: TextDocument, repoUrl: string) {
     const decorations: DecorationOptions[] = [];
 
     const lineCount = document.lineCount ?? 0;
 
-    // Longest author lengths to align columns
-    const maxAuthorLength = Math.max(
-      ...this.blameResults.map((line) => line.author.length),
+    const authorColumnWidth = Math.max(
+      ...this.blameResults.map((line) => this.getStringWidth(line.author)),
+      this.getStringWidth(UNCOMMITTED_AUTHOR),
     );
 
     // Latest commit, but skip uncommitted lines
     const latestCommit = maxBy(this.blameResults, (x) =>
       x.author === UNCOMMITTED_AUTHOR ? 0 : x.date,
     )?.hash;
+
+    const dateColumnWidth = Math.max(
+      ...this.blameResults.map((line) => line.formattedDate.length),
+    );
 
     for (let index = 1; index < lineCount; index++) {
       const blame = this.getBlameInfoForLine(index);
@@ -317,11 +347,20 @@ ${summary}
 
       const decorationOptions: ThemableDecorationAttachmentRenderOptions = {
         contentText: this.getAnnotationText(
+          blame.hash.slice(0, 7),
           isNotCommittedYet ? UNCOMMITTED_LABEL : blame.author,
-          blame.date,
-          maxAuthorLength,
+          blame.formattedDate,
+          authorColumnWidth,
+          dateColumnWidth,
         ),
-        backgroundColor: this.getColorForDate(blame.date),
+        color:
+          this.config.colorMode === 'text'
+            ? this.getColorForDate(blame.date)
+            : undefined,
+        backgroundColor:
+          this.config.colorMode === 'background'
+            ? this.getColorForDate(blame.date)
+            : undefined,
         fontStyle: isNotCommittedYet ? 'italic' : 'normal',
         fontWeight: isLastCommit ? 'bold' : 'normal',
       };
