@@ -23,7 +23,7 @@ import type { ExtensionProperties } from './types';
 /** Color to use for entries that are older than the last available color in the scale */
 const NO_COLOR = '#fff0';
 
-/** Non-breaking space: has the correct width but doesn’t get squished like a regular space */
+/** Non-breaking space: has the correct width but doesn't get squished like a regular space */
 const NBSP = '\u00A0';
 /** Narrower space */
 const THIN_SPACE = '\u2009';
@@ -178,6 +178,80 @@ export class BlameManager {
     return this.colorMap[date] ?? NO_COLOR;
   }
 
+  private formatRelativeTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    const reference = new Date();
+
+    const timestampDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
+    const referenceDate = new Date(
+      reference.getFullYear(),
+      reference.getMonth(),
+      reference.getDate(),
+    );
+
+    // Calculate difference in milliseconds and convert to days
+    const differenceInDays = Math.floor(
+      (referenceDate.getTime() - timestampDate.getTime()) /
+        (1000 * 60 * 60 * 24),
+    );
+
+    // Today - show minutes or hours
+    if (differenceInDays === 0) {
+      const diffInMinutes = Math.floor(
+        (reference.getTime() - date.getTime()) / (1000 * 60),
+      );
+      if (diffInMinutes < 60) {
+        return diffInMinutes === 0
+          ? 'Just now'
+          : `${diffInMinutes} minutes ago`;
+      }
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+    }
+
+    // Yesterday
+    if (differenceInDays === 1) {
+      return 'Yesterday';
+    }
+
+    // Days ago (2-6 days)
+    if (differenceInDays >= 2 && differenceInDays <= 6) {
+      return `${differenceInDays} days ago`;
+    }
+
+    // Weeks ago
+    const weeks = Math.floor(differenceInDays / 7);
+    if (weeks === 1) {
+      return '1 week ago';
+    }
+    if (weeks >= 2 && weeks <= 4) {
+      return `${weeks} weeks ago`;
+    }
+
+    // Months ago
+    const monthDiff =
+      (reference.getFullYear() - date.getFullYear()) * 12 +
+      (reference.getMonth() - date.getMonth());
+
+    if (monthDiff === 0 || monthDiff === 1) {
+      return '1 month ago';
+    }
+    if (monthDiff >= 2 && monthDiff <= 11) {
+      return `${monthDiff} months ago`;
+    }
+
+    // Years ago
+    const years = reference.getFullYear() - date.getFullYear();
+    if (years === 1) {
+      return '1 year ago';
+    }
+    return `${years} years ago`;
+  }
+
   private getAnnotationText(
     author: string,
     date: number,
@@ -185,7 +259,9 @@ export class BlameManager {
   ) {
     return [
       THIN_SPACE,
-      this.formatDateShort(date),
+      this.config.useRelativeTime
+        ? this.formatRelativeTime(date)
+        : this.formatDateShort(date),
       ' ',
       author.padEnd(maxAuthorLength, NBSP),
       THIN_SPACE,

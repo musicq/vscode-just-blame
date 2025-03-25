@@ -104,6 +104,11 @@
           "description": "Locale to format dates",
           "type": "string",
           "default": "en-GB"
+        },
+        "justBlame.useRelativeTime": {
+          "description": "Show relative time (e.g. '2 days ago') instead of absolute date",
+          "type": "boolean",
+          "default": false
         }
       }
     }

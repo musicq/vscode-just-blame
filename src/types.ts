@@ -4,4 +4,5 @@ export interface ExtensionProperties {
     dark: string[];
   };
   locale: string;
+  useRelativeTime: boolean;
 }

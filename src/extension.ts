@@ -4,10 +4,12 @@ import { BlameManager } from './BlameManager';
 import type { ExtensionProperties } from './types';
 
 function getExtensionProperties(): ExtensionProperties {
-  const { colorScale, locale } = workspace.getConfiguration('justBlame');
+  const { colorScale, locale, useRelativeTime } =
+    workspace.getConfiguration('justBlame');
   return {
     colorScale,
     locale,
+    useRelativeTime: useRelativeTime ?? false,
   };
 }
 
