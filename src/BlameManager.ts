@@ -19,7 +19,7 @@ import {
   type ThemableDecorationAttachmentRenderOptions,
 } from 'vscode';
 import type { ExtensionProperties } from './types';
-import { alignStrings } from './helper';
+import { alignText } from 'text-aligner';
 
 /** Color to use for entries that are older than the last available color in the scale */
 const NO_COLOR = '#fff0';
@@ -302,7 +302,7 @@ ${summary}
 
     const lineCount = document.lineCount ?? 0;
 
-    const authors = alignStrings(this.blameResults.map((line) => line.author));
+    const authors = alignText(this.blameResults.map((line) => line.author));
 
     this.blameResults = this.blameResults.map((line, index) => ({
       ...line,

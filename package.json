@@ -153,7 +153,8 @@
   },
   "dependencies": {
     "git-remote-origin-url": "^4.0.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "text-aligner": "^1.1.0"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx,md}": "prettier --write",
