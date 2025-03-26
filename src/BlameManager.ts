@@ -19,6 +19,7 @@ import {
   type ThemableDecorationAttachmentRenderOptions,
 } from 'vscode';
 import type { ExtensionProperties } from './types';
+import { alignStrings } from './helper';
 
 /** Color to use for entries that are older than the last available color in the scale */
 const NO_COLOR = '#fff0';
@@ -265,20 +266,14 @@ export class BlameManager {
     hash: string,
     author: string,
     formattedDate: string,
-    maxAuthorLength: number,
     maxDateLength: number,
   ) {
-    const authorWidth = this.getStringWidth(author);
-    const paddingWidth = maxAuthorLength - authorWidth;
-    const padding = NBSP.repeat(paddingWidth);
-
     return [
       THIN_SPACE,
       hash,
       ' ',
       author,
-      padding,
-      ' ',
+      NBSP.repeat(3),
       formattedDate.padStart(maxDateLength, NBSP),
       THIN_SPACE,
     ].join('');
@@ -302,25 +297,17 @@ ${summary}
     return this.blameResults.find((x) => x.lines.includes(lineNumber));
   }
 
-  private getStringWidth(str: string): number {
-    let width = 0;
-    for (const char of str) {
-      // assume Chinese characters have a width of 1.5 over english letters,
-      // but this is not accurate, just to make the alignment look better
-      width += /[\u4E00-\u9FA5]/.test(char) ? 1.5 : 1;
-    }
-    return width;
-  }
-
   private getBlamedDecorations(document: TextDocument, repoUrl: string) {
     const decorations: DecorationOptions[] = [];
 
     const lineCount = document.lineCount ?? 0;
 
-    const authorColumnWidth = Math.max(
-      ...this.blameResults.map((line) => this.getStringWidth(line.author)),
-      this.getStringWidth(UNCOMMITTED_AUTHOR),
-    );
+    const authors = alignStrings(this.blameResults.map((line) => line.author));
+
+    this.blameResults = this.blameResults.map((line, index) => ({
+      ...line,
+      author: authors[index],
+    }));
 
     // Latest commit, but skip uncommitted lines
     const latestCommit = maxBy(this.blameResults, (x) =>
@@ -350,7 +337,6 @@ ${summary}
           blame.hash.slice(0, 7),
           isNotCommittedYet ? UNCOMMITTED_LABEL : blame.author,
           blame.formattedDate,
-          authorColumnWidth,
           dateColumnWidth,
         ),
         color:
